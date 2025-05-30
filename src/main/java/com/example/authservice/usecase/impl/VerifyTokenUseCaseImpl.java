@@ -22,8 +22,7 @@ public class VerifyTokenUseCaseImpl implements VerifyTokenUseCase {
             return false;
         }
 
-        String email = JwtService.getEmailFromToken(token);
-        Optional<Token> tokenObj = this.tokenRepository.getTokenByEmail(email);
+        Optional<Token> tokenObj = this.tokenRepository.getTokenByToken(token);
         if (tokenObj.isEmpty()) {
             return false;
         } else if (tokenObj.get().getExpired_at().isBefore(Instant.now())) {

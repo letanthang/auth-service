@@ -47,7 +47,7 @@ public class AuthController {
                 boolean active = verifyTokenUseCase.verifyToken(token);
                 ctx.json(new VerifyResponse(active));
             } else {
-                ctx.status(401);
+                throw new UnauthorizedUserException();
             }
         };
     }
