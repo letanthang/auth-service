@@ -1,5 +1,6 @@
 package com.example.authservice.service;
 
+import com.example.authservice.config.Config;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -9,7 +10,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 public class JwtService {
-    private static final String SECRET = "your-256-bit-secret-your-256-bit-secret-your-256-bit-secret-your-256-bit-secret";
+    private static final String SECRET = Config.JWT_SECRET;
     private static final int EXPIRATION_MINUTES = 24 * 60;
 
     private static Key getSigningKey() {

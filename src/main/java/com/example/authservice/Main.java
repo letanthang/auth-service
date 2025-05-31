@@ -26,6 +26,7 @@ import com.example.authservice.usecase.impl.*;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.javalin.json.JavalinJackson;
+import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -38,21 +39,7 @@ public class Main {
         migrate();
         
         emf = PersistenceConfig.createEntityManagerFactory();
-        var authUserRepository = new MySQLAuthUserRepository(emf);
-        var tokenRepository = new MySQLTokenRepository(emf);
-        
-
-        LogoutUseCaseImpl logoutUseCase = new LogoutUseCaseImpl(tokenRepository);
-        LoginUseCaseImpl loginUseCase = new LoginUseCaseImpl(authUserRepository, tokenRepository);
-        RegisterUseCaseImpl registerUseCase = new RegisterUseCaseImpl();
-        VerifyTokenUseCaseImpl verifyTokenUseCase = new VerifyTokenUseCaseImpl(tokenRepository);
-
-        var authController = new AuthController(
-            loginUseCase,
-            logoutUseCase,
-            registerUseCase,
-            verifyTokenUseCase
-        );
+        var authController = getAuthController();
 
         Javalin app = Javalin.create(config -> {
             config.bundledPlugins.enableCors(cors -> {
@@ -101,6 +88,26 @@ public class Main {
             }
             app.stop();
         }));
+    }
+
+    @NotNull
+    private static AuthController getAuthController() {
+        var authUserRepository = new MySQLAuthUserRepository(emf);
+        var tokenRepository = new MySQLTokenRepository(emf);
+
+
+        LogoutUseCaseImpl logoutUseCase = new LogoutUseCaseImpl(tokenRepository);
+        LoginUseCaseImpl loginUseCase = new LoginUseCaseImpl(authUserRepository, tokenRepository);
+        RegisterUseCaseImpl registerUseCase = new RegisterUseCaseImpl(authUserRepository);
+        VerifyTokenUseCaseImpl verifyTokenUseCase = new VerifyTokenUseCaseImpl(tokenRepository);
+
+        var authController = new AuthController(
+            loginUseCase,
+            logoutUseCase,
+            registerUseCase,
+            verifyTokenUseCase
+        );
+        return authController;
     }
 
     static void migrate() {
