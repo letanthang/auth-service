@@ -51,6 +51,18 @@ public class JwtService {
                 .compact();
     }
 
+    public static String generateTemporalToken() {
+        Instant now = Instant.now();
+        Instant expiry = now.plus(1, ChronoUnit.MINUTES);
+
+        return Jwts.builder()
+                .setSubject("admin@winwin.com")
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(expiry) )
+                .signWith(getSigningKey())
+                .compact();
+    }
+
     public static Instant getExpirationDate() {
         Instant now = Instant.now();
         return  now.plus(EXPIRATION_MINUTES, ChronoUnit.MINUTES);

@@ -1,7 +1,8 @@
 package com.example.authservice.service.client.user;
 
-import java.time.LocalDate;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CreateUserResponse {
     public int id;
 }

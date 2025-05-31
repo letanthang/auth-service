@@ -11,6 +11,10 @@ public class UserRegisterRequest {
     private String avatar;
     private LocalDate birthdate;
 
+    public UserRegisterRequest() {
+
+    }
+
     public UserRegisterRequest(String email, String password, String name, String gender, String nickname, String avatar, LocalDate birthdate) {
         this.email = email;
         this.password = password;
