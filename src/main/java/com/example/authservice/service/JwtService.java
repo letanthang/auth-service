@@ -1,6 +1,7 @@
 package com.example.authservice.service;
 
 import com.example.authservice.config.Config;
+import com.example.authservice.domain.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -12,6 +13,7 @@ import java.util.Date;
 public class JwtService {
     private static final String SECRET = Config.JWT_SECRET;
     private static final int EXPIRATION_MINUTES = 24 * 60;
+    private static final String ROLE_CLAIM = "role";
 
     private static Key getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes());
@@ -38,15 +40,25 @@ public class JwtService {
         return claims.getSubject();
     }
 
-    public static String generateToken(String email) {
+    public static Role getRoleFromToken(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        String roleStr = claims.get(ROLE_CLAIM, String.class);
+        return Role.valueOf(roleStr);
+    }
 
+    public static String generateToken(String email, Role role) {
         Instant now = Instant.now();
         Instant expiry = now.plus(EXPIRATION_MINUTES, ChronoUnit.MINUTES);
 
         return Jwts.builder()
                 .setSubject(email)
+                .claim(ROLE_CLAIM, role.name())
                 .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(expiry) )
+                .setExpiration(Date.from(expiry))
                 .signWith(getSigningKey())
                 .compact();
     }
@@ -57,8 +69,9 @@ public class JwtService {
 
         return Jwts.builder()
                 .setSubject("admin@winwin.com")
+                .claim(ROLE_CLAIM, Role.ADMIN.name())
                 .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(expiry) )
+                .setExpiration(Date.from(expiry))
                 .signWith(getSigningKey())
                 .compact();
     }

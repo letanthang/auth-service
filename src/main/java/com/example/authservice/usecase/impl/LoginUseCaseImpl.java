@@ -5,6 +5,7 @@ import com.example.authservice.usecase.LoginUseCase;
 import com.example.authservice.service.JwtService;
 import com.example.authservice.repository.TokenRepository;
 import com.example.authservice.repository.AuthUserRepository;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class LoginUseCaseImpl implements LoginUseCase {
     private final AuthUserRepository authUserRepository;
@@ -22,7 +23,12 @@ public class LoginUseCaseImpl implements LoginUseCase {
             return "";
         }
 
-        String strToken = JwtService.generateToken(email);
+        var authUser = user.get();
+        if (!BCrypt.checkpw(password, authUser.getPassword())) {
+            return "";
+        }
+
+        String strToken = JwtService.generateToken(email, authUser.getRole());
 
         Token token = new Token(email, strToken, JwtService.getExpirationDate());
         this.tokenRepository.addToken(token);

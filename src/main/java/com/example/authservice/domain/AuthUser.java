@@ -5,7 +5,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Table;
-
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 
 @Entity
 @Table(name = "auth_users")
@@ -15,6 +16,9 @@ public class AuthUser {
     private Integer id;
     private String email;
     private String password;
+    
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     public AuthUser() {
     }
@@ -23,6 +27,14 @@ public class AuthUser {
         this.id = id;
         this.email = email;
         this.password = password;
+        this.role = Role.USER; // Default role
+    }
+
+    public AuthUser(Integer id, String email, String password, Role role) {
+        this.id = id;
+        this.email = email;
+        this.password = password;
+        this.role = role;
     }
 
     public Integer getId() {
@@ -47,5 +59,13 @@ public class AuthUser {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 }
