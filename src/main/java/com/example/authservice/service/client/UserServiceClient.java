@@ -12,6 +12,7 @@ import java.net.http.HttpResponse;
 import com.example.authservice.service.client.user.CreateUserResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.javalin.http.HttpResponseException;
 import io.jsonwebtoken.Jwts;
 
 public class UserServiceClient {
@@ -35,7 +36,7 @@ public class UserServiceClient {
             CreateUserResponse userResponse = objectMapper.readValue(response.body(), CreateUserResponse.class);
             return userResponse.id;
         } else {
-            throw new RuntimeException("Failed to add user: " + response.body());
+            throw new HttpResponseException(response.statusCode(), response.body());
         }
     }
 }

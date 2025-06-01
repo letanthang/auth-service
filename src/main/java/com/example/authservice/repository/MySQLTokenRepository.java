@@ -6,7 +6,9 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.TypedQuery;
+import jakarta.persistence.Query;
 
+import java.time.Instant;
 import java.util.Optional;
 
 public class MySQLTokenRepository implements TokenRepository {
@@ -84,6 +86,22 @@ public class MySQLTokenRepository implements TokenRepository {
             }
             em.getTransaction().rollback();
             return false;
+        } finally {
+            em.close();
+        }
+    }
+
+    @Override
+    public int deleteExpiredTokens() {
+        EntityManager em = emf.createEntityManager();
+        try {
+            em.getTransaction().begin();
+            Query query = em.createQuery("DELETE FROM Token u WHERE u.expired_at < :now");
+            query.setParameter("now", Instant.now());
+            int rowsDeleted = query.executeUpdate();
+
+            em.getTransaction().commit();
+            return rowsDeleted;
         } finally {
             em.close();
         }

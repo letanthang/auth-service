@@ -10,4 +10,5 @@ public interface TokenRepository {
     Optional<Token> getTokenByToken(String token);
     Optional<Token> getTokenByEmail(String email);
     boolean deleteToken(Integer id);
+    int deleteExpiredTokens();
 }

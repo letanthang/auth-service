@@ -4,6 +4,8 @@ import com.example.authservice.exception.NotFoundTokenException;
 import com.example.authservice.exception.NotFoundUserException;
 import com.example.authservice.exception.UnauthorizedUserException;
 import com.example.authservice.repository.MySQLTokenRepository;
+import com.example.authservice.repository.TokenRepository;
+
 import io.javalin.Javalin;
 import io.javalin.http.HttpStatus;
 import io.javalin.plugin.bundled.CorsPluginConfig;
@@ -30,8 +32,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.logging.Logger;
 
 public class Main {
+    private static final Logger appLog = Logger.getLogger(Main.class.getName());
     private static EntityManagerFactory emf;
 
     public static void main(String[] args) throws Exception {
@@ -53,7 +57,12 @@ public class Main {
         // Add custom error handler for HttpResponseException
         app.exception(HttpResponseException.class, (e, ctx) -> {
             ctx.status(e.getStatus());
-            ctx.json(new ErrorResponse("UNAUTHORIZED", e.getMessage()));
+            ctx.json(new ErrorResponse(getStatusMessage(e.getStatus()), e.getMessage()));
+        });
+
+        app.exception(RuntimeException.class, (e, ctx) -> {
+            ctx.status(HttpStatus.INTERNAL_SERVER_ERROR);
+            ctx.json(new ErrorResponse("SERVER_ERROR", e.getMessage()));
         });
 
         app.exception(NotFoundUserException.class, (e, ctx) -> {
@@ -94,20 +103,19 @@ public class Main {
     private static AuthController getAuthController() {
         var authUserRepository = new MySQLAuthUserRepository(emf);
         var tokenRepository = new MySQLTokenRepository(emf);
-
+        removeExpireSession(tokenRepository);
 
         LogoutUseCaseImpl logoutUseCase = new LogoutUseCaseImpl(tokenRepository);
         LoginUseCaseImpl loginUseCase = new LoginUseCaseImpl(authUserRepository, tokenRepository);
         RegisterUseCaseImpl registerUseCase = new RegisterUseCaseImpl(authUserRepository);
         VerifyTokenUseCaseImpl verifyTokenUseCase = new VerifyTokenUseCaseImpl(tokenRepository);
 
-        var authController = new AuthController(
+        return new AuthController(
             loginUseCase,
             logoutUseCase,
             registerUseCase,
             verifyTokenUseCase
         );
-        return authController;
     }
 
     static void migrate() {
@@ -120,5 +128,22 @@ public class Main {
             e.printStackTrace();
             throw new RuntimeException("Migration failed", e);
         }
+    }
+
+    static void removeExpireSession(TokenRepository tokenRepository) {
+        int deletedRows = tokenRepository.deleteExpiredTokens();
+        appLog.info("Deleted " + deletedRows + " expired tokens");  
+    }
+
+     public static String getStatusMessage(int statusCode) {
+        return switch (statusCode) {
+            case 400 -> "BAD_REQUEST";
+            case 401 -> "UNAUTHORIZED";
+            case 403 -> "FORBIDDEN";
+            case 404 -> "NOT_FOUND";
+            case 409 -> "CONFLICT_RESOURCE";
+            case 500 -> "INTERNAL_SERVER_ERROR";
+            default -> "UNKNOWN";
+        };
     }
 }

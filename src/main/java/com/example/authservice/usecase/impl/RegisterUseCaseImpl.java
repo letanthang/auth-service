@@ -6,6 +6,7 @@ import com.example.authservice.repository.AuthUserRepository;
 import com.example.authservice.service.client.UserServiceClient;
 import com.example.authservice.service.client.user.CreateUserRequest;
 import com.example.authservice.usecase.RegisterUseCase;
+import io.javalin.http.HttpResponseException;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class RegisterUseCaseImpl implements RegisterUseCase {
@@ -19,6 +20,8 @@ public class RegisterUseCaseImpl implements RegisterUseCase {
         UserServiceClient userServiceClient = new UserServiceClient();
         try {
             var id = userServiceClient.addUser(createUserRequest);
+        } catch (HttpResponseException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
