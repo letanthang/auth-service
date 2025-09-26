@@ -1,8 +1,8 @@
-package com.example.authservice.usecase.impl;
+package com.example.authservice.domain.usecase.impl;
 
-import com.example.authservice.domain.Token;
-import com.example.authservice.repository.TokenRepository;
-import com.example.authservice.usecase.VerifyTokenUseCase;
+import com.example.authservice.domain.entity.Token;
+import com.example.authservice.domain.repository.TokenRepository;
+import com.example.authservice.domain.usecase.VerifyTokenUseCase;
 import com.example.authservice.service.JwtService;
 
 import java.time.Instant;
@@ -11,6 +11,7 @@ import java.util.Optional;
 
 public class VerifyTokenUseCaseImpl implements VerifyTokenUseCase {
     private final TokenRepository tokenRepository;
+
     public VerifyTokenUseCaseImpl(TokenRepository tokenRepository) {
         this.tokenRepository = tokenRepository;
     }

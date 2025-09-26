@@ -1,15 +1,16 @@
-package com.example.authservice.usecase.impl;
+package com.example.authservice.domain.usecase.impl;
 
-import com.example.authservice.domain.Token;
-import com.example.authservice.usecase.LoginUseCase;
+import com.example.authservice.domain.entity.Token;
+import com.example.authservice.domain.repository.AuthUserRepository;
+import com.example.authservice.domain.repository.TokenRepository;
+import com.example.authservice.domain.usecase.LoginUseCase;
 import com.example.authservice.service.JwtService;
-import com.example.authservice.repository.TokenRepository;
-import com.example.authservice.repository.AuthUserRepository;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class LoginUseCaseImpl implements LoginUseCase {
     private final AuthUserRepository authUserRepository;
     private final TokenRepository tokenRepository;
+
     public LoginUseCaseImpl(AuthUserRepository authUserRepository, TokenRepository tokenRepository) {
         this.authUserRepository = authUserRepository;
         this.tokenRepository = tokenRepository;

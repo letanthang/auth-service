@@ -4,14 +4,14 @@
     <persistence-unit name="auth_userPU" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
 
-        <class>com.example.authservice.domain.AuthUser</class> <!-- your @Entity classes -->
+        <class>com.example.authservice.domain.entity.AuthUser</class> <!-- your @Entity classes -->
 
         <properties>
             <property name="javax.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
             <property name="javax.persistence.jdbc.url" value="${DB_URL}"/>
             <property name="javax.persistence.jdbc.authUser" value="${DB_USER}"/>
             <property name="javax.persistence.jdbc.password" value="${DB_PASS}"/>
-            
+
             <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.format_sql" value="true"/>

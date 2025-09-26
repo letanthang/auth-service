@@ -1,15 +1,23 @@
 package com.example.authservice;
 
-import com.example.authservice.exception.NotFoundTokenException;
-import com.example.authservice.exception.NotFoundUserException;
-import com.example.authservice.exception.UnauthorizedUserException;
-import com.example.authservice.repository.MySQLTokenRepository;
-import com.example.authservice.repository.TokenRepository;
-
+import com.example.authservice.config.Config;
+import com.example.authservice.config.PersistenceConfig;
+import com.example.authservice.controller.AuthController;
+import com.example.authservice.domain.exception.NotFoundTokenException;
+import com.example.authservice.domain.exception.NotFoundUserException;
+import com.example.authservice.domain.exception.UnauthorizedUserException;
+import com.example.authservice.domain.repository.TokenRepository;
+import com.example.authservice.domain.usecase.impl.*;
+import com.example.authservice.dto.ErrorResponse;
+import com.example.authservice.infrastructure.repository.MySQLAuthUserRepository;
+import com.example.authservice.infrastructure.repository.MySQLTokenRepository;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.javalin.Javalin;
-import io.javalin.http.HttpStatus;
-import io.javalin.plugin.bundled.CorsPluginConfig;
 import io.javalin.http.HttpResponseException;
+import io.javalin.http.HttpStatus;
+import io.javalin.json.JavalinJackson;
+import io.javalin.plugin.bundled.CorsPluginConfig;
 import jakarta.persistence.EntityManagerFactory;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
@@ -18,16 +26,6 @@ import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.resource.ClassLoaderResourceAccessor;
-
-import com.example.authservice.config.Config;
-import com.example.authservice.config.PersistenceConfig;
-import com.example.authservice.controller.AuthController;
-import com.example.authservice.dto.ErrorResponse;
-import com.example.authservice.repository.MySQLAuthUserRepository;
-import com.example.authservice.usecase.impl.*;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.javalin.json.JavalinJackson;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
@@ -41,7 +39,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         Config.load();
         migrate();
-        
+
         emf = PersistenceConfig.createEntityManagerFactory();
         var authController = getAuthController();
 
@@ -50,8 +48,8 @@ public class Main {
                 cors.addRule(CorsPluginConfig.CorsRule::anyHost);
             });
             config.jsonMapper(new JavalinJackson(JsonMapper.builder()
-                .addModule(new JavaTimeModule())
-                .build(), true));
+                    .addModule(new JavaTimeModule())
+                    .build(), true));
         });
 
         // Add custom error handler for HttpResponseException
@@ -84,6 +82,7 @@ public class Main {
         app.post("/auth/login", authController.login);
         app.post("/auth/logout", authController.logout);
         app.post("/auth/register", authController.register);
+        app.post("/auth/password", authController.updatePassword);
         app.get("/auth/verify", authController.verify);
 
         // Start the server
@@ -109,12 +108,14 @@ public class Main {
         LoginUseCaseImpl loginUseCase = new LoginUseCaseImpl(authUserRepository, tokenRepository);
         RegisterUseCaseImpl registerUseCase = new RegisterUseCaseImpl(authUserRepository);
         VerifyTokenUseCaseImpl verifyTokenUseCase = new VerifyTokenUseCaseImpl(tokenRepository);
+        UpdatePasswordUseCaseImpl updatePasswordUseCase = new UpdatePasswordUseCaseImpl(authUserRepository);
 
         return new AuthController(
-            loginUseCase,
-            logoutUseCase,
-            registerUseCase,
-            verifyTokenUseCase
+                loginUseCase,
+                logoutUseCase,
+                registerUseCase,
+                updatePasswordUseCase,
+                verifyTokenUseCase
         );
     }
 
@@ -132,10 +133,10 @@ public class Main {
 
     static void removeExpireSession(TokenRepository tokenRepository) {
         int deletedRows = tokenRepository.deleteExpiredTokens();
-        appLog.info("Deleted " + deletedRows + " expired tokens");  
+        appLog.info("Deleted " + deletedRows + " expired tokens");
     }
 
-     public static String getStatusMessage(int statusCode) {
+    public static String getStatusMessage(int statusCode) {
         return switch (statusCode) {
             case 400 -> "BAD_REQUEST";
             case 401 -> "UNAUTHORIZED";

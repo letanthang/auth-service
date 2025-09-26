@@ -1,12 +1,12 @@
-package com.example.authservice.usecase.impl;
+package com.example.authservice.domain.usecase.impl;
 
-import com.example.authservice.repository.TokenRepository;
+import com.example.authservice.domain.repository.TokenRepository;
+import com.example.authservice.domain.usecase.LogoutUseCase;
 import com.example.authservice.service.JwtService;
-import com.example.authservice.usecase.LogoutUseCase;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class LogoutUseCaseImpl implements LogoutUseCase {
     private final TokenRepository tokenRepository;
+
     public LogoutUseCaseImpl(TokenRepository tokenRepository) {
         this.tokenRepository = tokenRepository;
     }

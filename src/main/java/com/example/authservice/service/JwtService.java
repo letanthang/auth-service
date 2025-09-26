@@ -1,10 +1,11 @@
 package com.example.authservice.service;
 
 import com.example.authservice.config.Config;
-import com.example.authservice.domain.Role;
+import com.example.authservice.domain.entity.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+
 import java.security.Key;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -22,9 +23,9 @@ public class JwtService {
     public static boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token);
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token);
             return true;
         } catch (Exception e) {
             return false;
@@ -78,6 +79,6 @@ public class JwtService {
 
     public static Instant getExpirationDate() {
         Instant now = Instant.now();
-        return  now.plus(EXPIRATION_MINUTES, ChronoUnit.MINUTES);
+        return now.plus(EXPIRATION_MINUTES, ChronoUnit.MINUTES);
     }
 } 

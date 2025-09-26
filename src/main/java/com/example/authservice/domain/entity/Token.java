@@ -1,9 +1,8 @@
-package com.example.authservice.domain;
+package com.example.authservice.domain.entity;
 
 import jakarta.persistence.*;
 
 import java.time.Instant;
-import java.time.LocalDate;
 
 
 @Entity
@@ -44,6 +43,7 @@ public class Token {
     public String getEmail() {
         return email;
     }
+
     public void setEmail(String email) {
         this.email = email;
     }

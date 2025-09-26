@@ -1,12 +1,6 @@
-package com.example.authservice.domain;
+package com.example.authservice.domain.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Table;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.EnumType;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "auth_users")
@@ -16,7 +10,7 @@ public class AuthUser {
     private Integer id;
     private String email;
     private String password;
-    
+
     @Enumerated(EnumType.STRING)
     private Role role;
 

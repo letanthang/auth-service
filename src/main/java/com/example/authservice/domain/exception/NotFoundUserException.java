@@ -1,4 +1,4 @@
-package com.example.authservice.exception;
+package com.example.authservice.domain.exception;
 
 public class NotFoundUserException extends RuntimeException {
     public NotFoundUserException(String message) {

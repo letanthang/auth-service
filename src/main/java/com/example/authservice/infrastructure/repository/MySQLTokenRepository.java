@@ -1,12 +1,11 @@
-package com.example.authservice.repository;
+package com.example.authservice.infrastructure.repository;
 
-import com.example.authservice.domain.Token;
-import com.example.authservice.exception.NotFoundTokenException;
+import com.example.authservice.domain.entity.Token;
+import com.example.authservice.domain.repository.TokenRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.TypedQuery;
 import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -18,65 +17,51 @@ public class MySQLTokenRepository implements TokenRepository {
         this.emf = emf;
     }
 
-    @Override
-    public void addToken(Token token) {
-        EntityManager em = emf.createEntityManager();
-        try {
-            em.getTransaction().begin();
-            em.persist(token);
-            em.getTransaction().commit();
-        } finally {
-            em.close();
-        }
-    }
 
     @Override
     public Optional<Token> getTokenById(Integer id) {
-        EntityManager em = emf.createEntityManager();
-        try {
+        try (EntityManager em = emf.createEntityManager()) {
             Token token = em.find(Token.class, id);
             return Optional.ofNullable(token);
-        } finally {
-            em.close();
         }
     }
 
     @Override
     public Optional<Token> getTokenByToken(String token) {
-        EntityManager em = emf.createEntityManager();
-        try {
+        try (EntityManager em = emf.createEntityManager()) {
             TypedQuery<Token> query = em.createQuery(
                     "SELECT u FROM Token u WHERE u.token = :token", Token.class);
             query.setParameter("token", token);
 
-            var tokenObj = query.getSingleResult();
-            return Optional.ofNullable(tokenObj);
-        } catch (NoResultException e) {
-            throw new NotFoundTokenException("token not found");
-        } finally {
-            em.close();
+            var results = query.getResultList();
+            return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
         }
     }
 
     @Override
     public Optional<Token> getTokenByEmail(String email) {
-        EntityManager em = emf.createEntityManager();
-        try {
+        try (EntityManager em = emf.createEntityManager()) {
             TypedQuery<Token> query = em.createQuery(
                     "SELECT u FROM Token u WHERE u.email = :email", Token.class);
             query.setParameter("email", email);
 
             var token = query.getSingleResult();
             return Optional.ofNullable(token);
-        } finally {
-            em.close();
+        }
+    }
+
+    @Override
+    public void addToken(Token token) {
+        try (EntityManager em = emf.createEntityManager()) {
+            em.getTransaction().begin();
+            em.persist(token);
+            em.getTransaction().commit();
         }
     }
 
     @Override
     public boolean deleteToken(Integer id) {
-        EntityManager em = emf.createEntityManager();
-        try {
+        try (EntityManager em = emf.createEntityManager()) {
             em.getTransaction().begin();
             Token authUser = em.find(Token.class, id);
             if (authUser != null) {
@@ -86,15 +71,12 @@ public class MySQLTokenRepository implements TokenRepository {
             }
             em.getTransaction().rollback();
             return false;
-        } finally {
-            em.close();
         }
     }
 
     @Override
     public int deleteExpiredTokens() {
-        EntityManager em = emf.createEntityManager();
-        try {
+        try (EntityManager em = emf.createEntityManager()) {
             em.getTransaction().begin();
             Query query = em.createQuery("DELETE FROM Token u WHERE u.expired_at < :now");
             query.setParameter("now", Instant.now());
@@ -102,8 +84,6 @@ public class MySQLTokenRepository implements TokenRepository {
 
             em.getTransaction().commit();
             return rowsDeleted;
-        } finally {
-            em.close();
         }
     }
 }
