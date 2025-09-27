@@ -1,4 +1,4 @@
-package com.example.authservice.controller;
+package com.example.authservice.infrastructure.controller;
 
 import com.example.authservice.domain.entity.AuthUser;
 import com.example.authservice.domain.exception.UnauthorizedUserException;

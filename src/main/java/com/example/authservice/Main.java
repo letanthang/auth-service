@@ -2,13 +2,13 @@ package com.example.authservice;
 
 import com.example.authservice.config.Config;
 import com.example.authservice.config.PersistenceConfig;
-import com.example.authservice.controller.AuthController;
 import com.example.authservice.domain.exception.NotFoundTokenException;
 import com.example.authservice.domain.exception.NotFoundUserException;
 import com.example.authservice.domain.exception.UnauthorizedUserException;
 import com.example.authservice.domain.repository.TokenRepository;
 import com.example.authservice.domain.usecase.impl.*;
 import com.example.authservice.dto.ErrorResponse;
+import com.example.authservice.infrastructure.controller.AuthController;
 import com.example.authservice.infrastructure.repository.MySQLAuthUserRepository;
 import com.example.authservice.infrastructure.repository.MySQLTokenRepository;
 import com.fasterxml.jackson.databind.json.JsonMapper;
