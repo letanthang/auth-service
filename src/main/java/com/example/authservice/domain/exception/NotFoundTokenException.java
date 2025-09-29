@@ -1,7 +1,7 @@
 package com.example.authservice.domain.exception;
 
-public class NotFoundTokenException extends RuntimeException {
+public class NotFoundTokenException extends HttpException {
     public NotFoundTokenException(String message) {
-        super(message);
+        super(message, 404);
     }
 } 

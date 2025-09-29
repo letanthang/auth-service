@@ -1,7 +1,7 @@
 package com.example.authservice.domain.exception;
 
-public class InvalidParameterException extends RuntimeException {
+public class InvalidParameterException extends HttpException {
     public InvalidParameterException(String message) {
-        super(message);
+        super(message, 400);
     }
 } 

@@ -1,8 +1,9 @@
 package com.example.authservice.domain.usecase.impl;
 
+import com.example.authservice.domain.exception.InvalidParameterException;
+import com.example.authservice.domain.exception.NotFoundUserException;
 import com.example.authservice.domain.repository.AuthUserRepository;
 import com.example.authservice.domain.usecase.UpdatePasswordUseCase;
-import com.example.authservice.domain.usecase.result.UpdatePasswordUseCaseResult;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class UpdatePasswordUseCaseImpl implements UpdatePasswordUseCase {
@@ -13,22 +14,23 @@ public class UpdatePasswordUseCaseImpl implements UpdatePasswordUseCase {
     }
 
     @Override
-    public UpdatePasswordUseCaseResult update(String email, String oldPassword, String newPassword) {
+    public void update(String email, String oldPassword, String newPassword) {
+        if (oldPassword.equals(newPassword)) {
+            throw new InvalidParameterException("The new password cannot be the same as the old password");
+        }
+
         var user = this.authUserRepository.getAuthUserByEmail(email);
 
         if (user.isEmpty()) {
-            return new UpdatePasswordUseCaseResult.UserNotFound();
+            throw new NotFoundUserException("User with email " + email + " not found");
         }
 
         var authUser = user.get();
         if (!BCrypt.checkpw(oldPassword, authUser.getPassword())) {
-            return new UpdatePasswordUseCaseResult.OldPasswordMismatched();
+            throw new InvalidParameterException("The old password is incorrect");
         }
 
         authUser.setPassword(BCrypt.hashpw(newPassword, BCrypt.gensalt()));
-
         authUserRepository.updateAuthUser(authUser);
-
-        return new UpdatePasswordUseCaseResult.Success();
     }
 } 

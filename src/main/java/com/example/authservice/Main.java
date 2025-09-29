@@ -2,15 +2,15 @@ package com.example.authservice;
 
 import com.example.authservice.config.Config;
 import com.example.authservice.config.PersistenceConfig;
-import com.example.authservice.domain.exception.NotFoundTokenException;
-import com.example.authservice.domain.exception.NotFoundUserException;
-import com.example.authservice.domain.exception.UnauthorizedUserException;
+import com.example.authservice.domain.exception.HttpException;
+import com.example.authservice.domain.exception.InvalidParameterException;
 import com.example.authservice.domain.repository.TokenRepository;
 import com.example.authservice.domain.usecase.impl.*;
 import com.example.authservice.dto.ErrorResponse;
 import com.example.authservice.infrastructure.controller.AuthController;
 import com.example.authservice.infrastructure.repository.MySQLAuthUserRepository;
 import com.example.authservice.infrastructure.repository.MySQLTokenRepository;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.javalin.Javalin;
@@ -52,6 +52,16 @@ public class Main {
                     .build(), true));
         });
 
+
+        app.exception(UnrecognizedPropertyException.class, (e, ctx) -> {
+            throw new InvalidParameterException(e.getMessage());
+        });
+
+        app.exception(HttpException.class, (e, ctx) -> {
+            ctx.status(e.getStatus());
+            ctx.json(new ErrorResponse(getStatusMessage(e.getStatus()), e.getMessage()));
+        });
+
         // Add custom error handler for HttpResponseException
         app.exception(HttpResponseException.class, (e, ctx) -> {
             ctx.status(e.getStatus());
@@ -63,26 +73,11 @@ public class Main {
             ctx.json(new ErrorResponse("SERVER_ERROR", e.getMessage()));
         });
 
-        app.exception(NotFoundUserException.class, (e, ctx) -> {
-            ctx.status(HttpStatus.NOT_FOUND);
-            ctx.json(new ErrorResponse("NOT_FOUND_USER", e.getMessage()));
-        });
-
-        app.exception(UnauthorizedUserException.class, (e, ctx) -> {
-            ctx.status(HttpStatus.UNAUTHORIZED);
-            ctx.json(new ErrorResponse("UNAUTHORIZED_USER", e.getMessage()));
-        });
-
-        app.exception(NotFoundTokenException.class, (e, ctx) -> {
-            ctx.status(HttpStatus.NOT_FOUND);
-            ctx.json(new ErrorResponse("NOT_FOUND_TOKEN", e.getMessage()));
-        });
-
         // Auth routes
         app.post("/auth/login", authController.login);
         app.post("/auth/logout", authController.logout);
         app.post("/auth/register", authController.register);
-        app.post("/auth/password", authController.updatePassword);
+        app.put("/auth/password", authController.updatePassword);
         app.get("/auth/verify", authController.verify);
 
         // Start the server
@@ -119,17 +114,6 @@ public class Main {
         );
     }
 
-    static void migrate() {
-        try (Connection connection = DriverManager.getConnection(Config.DB_URL, Config.DB_USER, Config.DB_PASS)) {
-            Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
-            try (Liquibase liquibase = new Liquibase("db/changelog/db.changelog-master.xml", new ClassLoaderResourceAccessor(), database)) {
-                liquibase.update(new Contexts(), new LabelExpression());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Migration failed", e);
-        }
-    }
 
     static void removeExpireSession(TokenRepository tokenRepository) {
         int deletedRows = tokenRepository.deleteExpiredTokens();
@@ -146,5 +130,17 @@ public class Main {
             case 500 -> "INTERNAL_SERVER_ERROR";
             default -> "UNKNOWN";
         };
+    }
+
+    static void migrate() {
+        try (Connection connection = DriverManager.getConnection(Config.DB_URL, Config.DB_USER, Config.DB_PASS)) {
+            Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
+            try (Liquibase liquibase = new Liquibase("db/changelog/db.changelog-master.xml", new ClassLoaderResourceAccessor(), database)) {
+                liquibase.update(new Contexts(), new LabelExpression());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Migration failed", e);
+        }
     }
 }

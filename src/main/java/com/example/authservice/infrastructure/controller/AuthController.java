@@ -56,13 +56,13 @@ public class AuthController {
 
         this.updatePassword = ctx -> {
             String token = ctx.header("Authorization");
-            if (token != null && token.startsWith("Bearer ")) {
-                token = token.substring(7);
-                var active = JwtService.validateToken(token);
-                if (!active) {
-                    throw new UnauthorizedUserException();
-                }
-            } else {
+            if (token == null || !token.startsWith("Bearer ")) {
+                throw new UnauthorizedUserException();
+            }
+
+            token = token.substring(7);
+            var active = JwtService.validateToken(token);
+            if (!active) {
                 throw new UnauthorizedUserException();
             }
 

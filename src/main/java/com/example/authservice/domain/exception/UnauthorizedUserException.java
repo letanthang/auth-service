@@ -1,7 +1,7 @@
 package com.example.authservice.domain.exception;
 
-public class UnauthorizedUserException extends RuntimeException {
+public class UnauthorizedUserException extends HttpException {
     public UnauthorizedUserException() {
-        super("Unauthorized User");
+        super("Unauthorized User", 401);
     }
 } 
