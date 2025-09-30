@@ -8,3 +8,6 @@ build:
 	-t auth-service:latest .
 up:
 	docker compose up
+push:
+	docker build -t ap-singapore-1.ocir.io/axfnrpyfvlpv/auth_service:stable .
+	docker push ap-singapore-1.ocir.io/axfnrpyfvlpv/auth_service:stable
