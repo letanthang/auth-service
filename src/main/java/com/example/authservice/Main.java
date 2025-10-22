@@ -31,6 +31,10 @@ import org.jetbrains.annotations.NotNull;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.logging.Logger;
+import static io.javalin.apibuilder.ApiBuilder.path;
+import static io.javalin.apibuilder.ApiBuilder.post;
+import static io.javalin.apibuilder.ApiBuilder.put;
+import static io.javalin.apibuilder.ApiBuilder.get;
 
 public class Main {
     private static final Logger appLog = Logger.getLogger(Main.class.getName());
@@ -50,6 +54,15 @@ public class Main {
             config.jsonMapper(new JavalinJackson(JsonMapper.builder()
                     .addModule(new JavaTimeModule())
                     .build(), true));
+            config.router.apiBuilder(()->{
+                path("/api/v1", () -> {
+                    post("/auth/login", authController.login);
+                    post("/auth/logout", authController.logout);
+                    post("/auth/register", authController.register);
+                    put("/auth/password", authController.updatePassword);
+                    get("/auth/verify", authController.verify);
+                 });
+            });
         });
 
 
@@ -72,13 +85,6 @@ public class Main {
             ctx.status(HttpStatus.INTERNAL_SERVER_ERROR);
             ctx.json(new ErrorResponse("SERVER_ERROR", e.getMessage()));
         });
-
-        // Auth routes
-        app.post("/auth/login", authController.login);
-        app.post("/auth/logout", authController.logout);
-        app.post("/auth/register", authController.register);
-        app.put("/auth/password", authController.updatePassword);
-        app.get("/auth/verify", authController.verify);
 
         // Start the server
         app.start(Config.PORT);

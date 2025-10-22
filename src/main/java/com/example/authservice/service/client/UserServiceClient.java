@@ -20,7 +20,7 @@ public class UserServiceClient {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public int addUser(CreateUserRequest user) throws Exception {
-        String url = Config.USER_SERVICE_URL + "/users";
+        String url = Config.USER_SERVICE_URL + "/api/v1/users";
         objectMapper.registerModule(new JavaTimeModule());
         String requestBody = objectMapper.writeValueAsString(user);
 
