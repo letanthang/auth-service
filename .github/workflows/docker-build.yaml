@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build_amd64:
+  build_multi:
     if: true
     runs-on: ubuntu-latest
     environment: dev
@@ -74,15 +74,15 @@ jobs:
       - name: Login to OCIR
         env:
           KO_PASSWORD: ${{ secrets.OCIR_AUTH_TOKEN }}
-          KO_USERNAME: ${{ secrets.OCIR_USERNAME }}/${{ secrets.OCIR_NAMESPACE }}
+          KO_USERNAME: ${{ secrets.OCIR_USERNAME }}/${{ vars.OCIR_NAMESPACE }}
         run: |
-          echo "$KO_PASSWORD" | ko login ${{ secrets.OCIR_REGISTRY }} \
+          echo "$KO_PASSWORD" | ko login ${{ vars.OCIR_REGISTRY }} \
           --username "$KO_USERNAME" \
           --password-stdin
 
       - name: Build & Push with ko
         env:
-          KO_DOCKER_REPO: "${{ secrets.OCIR_REGISTRY }}/${{ secrets.OCIR_NAMESPACE }}/${{ secrets.OCIR_REPO }}"
+          KO_DOCKER_REPO: "${{ vars.OCIR_REGISTRY }}/${{ vars.OCIR_NAMESPACE }}/${{ vars.OCIR_REPO }}"
           KO_DEFAULTPLATFORMS: "linux/amd64,linux/arm64"
         run: |
           ko build ./cmd
