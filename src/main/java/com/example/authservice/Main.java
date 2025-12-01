@@ -1,6 +1,6 @@
 package com.example.authservice;
 
-import com.example.authservice.config.Config;
+import com.example.authservice.config.AppConfig;
 import com.example.authservice.config.PersistenceConfig;
 import com.example.authservice.domain.exception.HttpException;
 import com.example.authservice.domain.exception.InvalidParameterException;
@@ -8,6 +8,7 @@ import com.example.authservice.domain.repository.TokenRepository;
 import com.example.authservice.domain.usecase.impl.*;
 import com.example.authservice.dto.ErrorResponse;
 import com.example.authservice.infrastructure.controller.AuthController;
+import com.example.authservice.infrastructure.nats.NatsJetStreamClient;
 import com.example.authservice.infrastructure.repository.MySQLAuthUserRepository;
 import com.example.authservice.infrastructure.repository.MySQLTokenRepository;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
@@ -27,44 +28,47 @@ import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.util.logging.Logger;
-import static io.javalin.apibuilder.ApiBuilder.path;
-import static io.javalin.apibuilder.ApiBuilder.post;
-import static io.javalin.apibuilder.ApiBuilder.put;
-import static io.javalin.apibuilder.ApiBuilder.get;
+
+import static io.javalin.apibuilder.ApiBuilder.*;
 
 public class Main {
-    private static final Logger appLog = Logger.getLogger(Main.class.getName());
+    private static final Logger appLog = LoggerFactory.getLogger(Main.class);
     private static EntityManagerFactory emf;
 
     public static void main(String[] args) throws Exception {
-        Config.load();
-        migrate();
+        AppConfig config = AppConfig.GetInstance();
+        migrate(config);
+
+        NatsJetStreamClient natBroker = new NatsJetStreamClient(config.getNatsOrigin(), config.getNatsUsername(), config.getNatsPassword());
 
         emf = PersistenceConfig.createEntityManagerFactory();
-        var authController = getAuthController();
+        var authController = getAuthController(natBroker, config);
 
-        Javalin app = Javalin.create(config -> {
-            config.bundledPlugins.enableCors(cors -> {
+        Javalin app = Javalin.create(conf -> {
+            conf.bundledPlugins.enableCors(cors -> {
                 cors.addRule(CorsPluginConfig.CorsRule::anyHost);
             });
-            config.jsonMapper(new JavalinJackson(JsonMapper.builder()
+            conf.jsonMapper(new JavalinJackson(JsonMapper.builder()
                     .addModule(new JavaTimeModule())
                     .build(), true));
-            config.router.apiBuilder(()->{
+
+            conf.router.apiBuilder(() -> {
+                // Auth route with api
                 path("/api/v1", () -> {
                     post("/auth/login", authController.login);
                     post("/auth/logout", authController.logout);
                     post("/auth/register", authController.register);
                     put("/auth/password", authController.updatePassword);
                     get("/auth/verify", authController.verify);
-                 });
+                });
+
             });
         });
-
 
         app.exception(UnrecognizedPropertyException.class, (e, ctx) -> {
             throw new InvalidParameterException(e.getMessage());
@@ -77,18 +81,21 @@ public class Main {
 
         // Add custom error handler for HttpResponseException
         app.exception(HttpResponseException.class, (e, ctx) -> {
+            appLog.error("call service exception!", e);
             ctx.status(e.getStatus());
             ctx.json(new ErrorResponse(getStatusMessage(e.getStatus()), e.getMessage()));
         });
 
         app.exception(RuntimeException.class, (e, ctx) -> {
+            appLog.error("run time exception!", e);
             ctx.status(HttpStatus.INTERNAL_SERVER_ERROR);
-            ctx.json(new ErrorResponse("SERVER_ERROR", e.getMessage()));
+            ctx.json(new ErrorResponse(getStatusMessage(500), e.getMessage()));
         });
 
+
         // Start the server
-        app.start(Config.PORT);
-        System.out.println("Server started on port " + Config.PORT);
+        app.start("0.0.0.0", config.getPort());
+        System.out.println("Server started on port " + config.getPort());
 
         // Add shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -100,14 +107,14 @@ public class Main {
     }
 
     @NotNull
-    private static AuthController getAuthController() {
+    private static AuthController getAuthController(NatsJetStreamClient natBroker, AppConfig config) {
         var authUserRepository = new MySQLAuthUserRepository(emf);
         var tokenRepository = new MySQLTokenRepository(emf);
         removeExpireSession(tokenRepository);
 
         LogoutUseCaseImpl logoutUseCase = new LogoutUseCaseImpl(tokenRepository);
-        LoginUseCaseImpl loginUseCase = new LoginUseCaseImpl(authUserRepository, tokenRepository);
-        RegisterUseCaseImpl registerUseCase = new RegisterUseCaseImpl(authUserRepository);
+        LoginUseCaseImpl loginUseCase = new LoginUseCaseImpl(authUserRepository, tokenRepository, natBroker, config.getNatsAuthUserLoginSubject());
+        RegisterUseCaseImpl registerUseCase = new RegisterUseCaseImpl(authUserRepository, natBroker, config.getNatsAuthUserRegisterSubject());
         VerifyTokenUseCaseImpl verifyTokenUseCase = new VerifyTokenUseCaseImpl(tokenRepository);
         UpdatePasswordUseCaseImpl updatePasswordUseCase = new UpdatePasswordUseCaseImpl(authUserRepository);
 
@@ -119,7 +126,6 @@ public class Main {
                 verifyTokenUseCase
         );
     }
-
 
     static void removeExpireSession(TokenRepository tokenRepository) {
         int deletedRows = tokenRepository.deleteExpiredTokens();
@@ -138,8 +144,8 @@ public class Main {
         };
     }
 
-    static void migrate() {
-        try (Connection connection = DriverManager.getConnection(Config.DB_URL, Config.DB_USER, Config.DB_PASS)) {
+    static void migrate(AppConfig config) {
+        try (Connection connection = DriverManager.getConnection(config.getDbUrl(), config.getDbUser(), config.getDbPass())) {
             Database database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
             try (Liquibase liquibase = new Liquibase("db/changelog/db.changelog-master.xml", new ClassLoaderResourceAccessor(), database)) {
                 liquibase.update(new Contexts(), new LabelExpression());

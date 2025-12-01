@@ -23,7 +23,7 @@ public class AuthController {
         this.login = ctx -> {
             var request = ctx.bodyAsClass(LoginRequest.class);
             String token = loginUseCase.login(request.getEmail(), request.getPassword());
-            ctx.json(new LoginResponse(token));
+            ctx.json(new ErrorResponse(new LoginResponse(token)));
         };
 
         this.logout = ctx -> {
@@ -40,7 +40,7 @@ public class AuthController {
         this.register = ctx -> {
             var request = ctx.bodyAsClass(UserRegisterRequest.class);
             AuthUser authUser = registerUseCase.register(request);
-            ctx.json(new RegisterResponse(authUser.getId().toString(), authUser.getEmail()));
+            ctx.json(new ErrorResponse(new RegisterResponse(authUser.getId().toString(), authUser.getEmail())));
         };
 
         this.verify = ctx -> {
@@ -48,7 +48,7 @@ public class AuthController {
             if (token != null && token.startsWith("Bearer ")) {
                 token = token.substring(7);
                 boolean active = verifyTokenUseCase.verifyToken(token);
-                ctx.json(new VerifyResponse(active));
+                ctx.json(new ErrorResponse(new VerifyResponse(active)));
             } else {
                 throw new UnauthorizedUserException();
             }

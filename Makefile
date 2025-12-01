@@ -55,3 +55,35 @@ oci/pool:
 	oci ce node-pool get --node-pool-id ocid1.nodepool.oc1.ap-singapore-1.aaaaaaaadm5rvfwkzh5xozgpxbbte3yfqq4iccnmhreuz6tv2noc47d363fq
 oci/instance:
 	oci compute instance get --instance-id ocid1.instance.oc1.ap-singapore-1.anzwsljr657yllicgr6p53c3qtjtbwukciksii5pftm27gma57ujfdofczja
+
+stream:
+	nats stream ls
+stream/add:
+	nats stream add auth_stream \
+	--subjects auth.* \
+	--storage file \
+	--replicas 1 \
+	--retention limits \
+	--discard old \
+	--deny-delete \
+	--no-deny-purge \
+	--allow-rollup \
+	--max-age 2h \
+	--max-msg-size 200kb \
+	--dupe-window 1h \
+	--max-msgs 100000 \
+	--max-bytes 1Gb \
+	--max-msgs-per-subject 1000
+
+stream/del:
+	nats stream rm
+pub:
+	nats pub auth.user_login_subject '{"user_id":1,"email":"thangdeptrai@gmail.com"}'
+sub:
+	nats sub auth.user_login_subject
+consumer:
+	nats consumer ls
+pub/register:
+	nats pub auth.user_register_subject '{"user_id":1,"email":"thangdeptrai@gmail.com"}'
+sub/register:
+	nats sub auth.user_register_subject

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="003" author="auth-service">
+        <addColumn tableName="auth_users">
+            <column name="user_id" type="Integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="uuid" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <addUniqueConstraint
+                tableName="auth_users"
+                columnNames="user_id"
+                constraintName="uk_user_id"/>
+        <addUniqueConstraint
+                tableName="auth_users"
+                columnNames="uuid"
+                constraintName="uk_uuid"/>
+    </changeSet>
+
+</databaseChangeLog> 

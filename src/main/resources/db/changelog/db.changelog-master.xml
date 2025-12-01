@@ -8,4 +8,5 @@
     <include file="db/changelog/changes/001-create-auth-users-table.xml"/>
     <include file="db/changelog/changes/002-create-tokens-table.xml"/>
     <include file="db/changelog/changes/003-add-role-to-auth-users.xml"/>
+    <include file="db/changelog/changes/004-add-user-id-and-uuid-to-auth-users.xml"/>
 </databaseChangeLog>

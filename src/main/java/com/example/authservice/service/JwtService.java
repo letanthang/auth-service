@@ -1,6 +1,6 @@
 package com.example.authservice.service;
 
-import com.example.authservice.config.Config;
+import com.example.authservice.config.AppConfig;
 import com.example.authservice.domain.entity.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -12,9 +12,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 public class JwtService {
-    private static final String SECRET = Config.JWT_SECRET;
+    private static final String SECRET = AppConfig.GetInstance().getJwtSecret();
     private static final int EXPIRATION_MINUTES = 24 * 60;
     private static final String ROLE_CLAIM = "role";
+    private static final String USER_ID_CLAIM = "user_id";
+    private static final String UUID_CLAIM = "uuid";
 
     private static Key getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes());
@@ -51,13 +53,15 @@ public class JwtService {
         return Role.valueOf(roleStr);
     }
 
-    public static String generateToken(String email, Role role) {
+    public static String generateToken(String email, int userID, long uuid, Role role) {
         Instant now = Instant.now();
         Instant expiry = now.plus(EXPIRATION_MINUTES, ChronoUnit.MINUTES);
 
         return Jwts.builder()
                 .setSubject(email)
                 .claim(ROLE_CLAIM, role.name())
+                .claim(USER_ID_CLAIM, userID)
+                .claim(UUID_CLAIM, uuid)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(expiry))
                 .signWith(getSigningKey())

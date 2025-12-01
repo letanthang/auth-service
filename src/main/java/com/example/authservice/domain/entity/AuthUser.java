@@ -8,7 +8,15 @@ public class AuthUser {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @Column(name = "user_id", nullable = false, unique = true)
+    private Integer userID;
+
+    @Column(name = "uuid", nullable = false, unique = true)
+    private Long uuid;
+
     private String email;
+
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -17,15 +25,10 @@ public class AuthUser {
     public AuthUser() {
     }
 
-    public AuthUser(Integer id, String email, String password) {
+    public AuthUser(Integer id, Integer userID, Long uuid, String email, String password, Role role) {
         this.id = id;
-        this.email = email;
-        this.password = password;
-        this.role = Role.USER; // Default role
-    }
-
-    public AuthUser(Integer id, String email, String password, Role role) {
-        this.id = id;
+        this.userID = userID;
+        this.uuid = uuid;
         this.email = email;
         this.password = password;
         this.role = role;
@@ -37,6 +40,22 @@ public class AuthUser {
 
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public Integer getUserID() {
+        return userID;
+    }
+
+    public void setUserID(Integer userID) {
+        this.userID = userID;
+    }
+
+    public Long getUUID() {
+        return uuid;
+    }
+
+    public void setUUID(Long uuid) {
+        this.uuid = uuid;
     }
 
     public String getEmail() {
