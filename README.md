@@ -1,7 +1,6 @@
 # Auth Service
 
 ## Installation
-
 - You need to install docker engine first : recommending orbstack
 - You need to start user-service first
 - You need to know to use docker
