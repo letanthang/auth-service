@@ -2,69 +2,70 @@ package com.example.authservice.infrastructure.repository;
 
 import com.example.authservice.domain.entity.AuthUser;
 import com.example.authservice.domain.repository.AuthUserRepository;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.TypedQuery;
+import org.jooq.DSLContext;
 
 import java.util.Optional;
 
-public class MySQLAuthUserRepository implements AuthUserRepository {
-    private final EntityManagerFactory emf;
+import static com.example.jooq.tables.authdb.tables.AuthUsers.AUTH_USERS;
 
-    public MySQLAuthUserRepository(EntityManagerFactory emf) {
-        this.emf = emf;
+
+public class MySQLAuthUserRepository implements AuthUserRepository {
+    private final DSLContext dbCtx;
+
+    public MySQLAuthUserRepository(DSLContext dbCtx) {
+        this.dbCtx = dbCtx;
     }
 
 
     @Override
     public Optional<AuthUser> getAuthUserById(Integer id) {
-        try (var em = emf.createEntityManager()) {
-            AuthUser authUser = em.find(AuthUser.class, id);
-            return Optional.ofNullable(authUser);
-        }
+        return dbCtx.selectFrom(AuthUser.TABLE_NAME)
+                .where("id = ?", id)
+                .fetchOptionalInto(AuthUser.class);
+
     }
 
     @Override
     public Optional<AuthUser> getAuthUserByEmail(String email) {
-        try (var em = emf.createEntityManager()) {
-            TypedQuery<AuthUser> query = em.createQuery(
-                    "SELECT u FROM AuthUser u WHERE u.email = :email", AuthUser.class);
-            query.setParameter("email", email);
+        return dbCtx.selectFrom(AuthUser.TABLE_NAME)
+                .where("email = ?", email)
+                .fetchOptionalInto(AuthUser.class);
 
-            var results = query.getResultList();
-            return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
-        }
     }
 
     @Override
     public void addAuthUser(AuthUser authUser) {
-        try (var em = emf.createEntityManager()) {
-            em.getTransaction().begin();
-            em.persist(authUser);
-            em.getTransaction().commit();
+        var record = dbCtx.insertInto(AUTH_USERS)
+                .set(AUTH_USERS.EMAIL, authUser.getEmail())
+                .set(AUTH_USERS.ROLE, authUser.getRole().toString())
+                .set(AUTH_USERS.USER_ID, authUser.getUserID())
+                .set(AUTH_USERS.PASSWORD, authUser.getPassword())
+                .set(AUTH_USERS.UUID, authUser.getUUID())
+                .returning(AUTH_USERS.ID)
+                .fetchOne();
+        if (record == null) {
+            throw new RuntimeException("Failed to insert record");
         }
+        authUser.setId(record.get(AUTH_USERS.ID));
     }
 
     @Override
     public boolean deleteAuthUser(Integer id) {
-        try (var em = emf.createEntityManager()) {
-            em.getTransaction().begin();
-            AuthUser authUser = em.find(AuthUser.class, id);
-            if (authUser != null) {
-                em.remove(authUser);
-                em.getTransaction().commit();
-                return true;
-            }
-            return false;
-        }
+        var rows = dbCtx.deleteFrom(AUTH_USERS)
+                .where("id = ?", id)
+                .execute();
+        return rows > 0;
     }
 
     @Override
     public boolean updateAuthUser(AuthUser updatedAuthUser) {
-        try (var em = emf.createEntityManager()) {
-            em.getTransaction().begin();
-            em.merge(updatedAuthUser);
-            em.getTransaction().commit();
-            return true;
-        }
+        var rows = dbCtx.update(AUTH_USERS)
+                .set(AUTH_USERS.ROLE, updatedAuthUser.getRole().toString())
+                .set(AUTH_USERS.PASSWORD, updatedAuthUser.getPassword())
+                .set(AUTH_USERS.UUID, updatedAuthUser.getUUID())
+                .set(AUTH_USERS.USER_ID, updatedAuthUser.getId())
+                .where("id = ?", updatedAuthUser.getId())
+                .execute();
+        return rows > 0;
     }
 }

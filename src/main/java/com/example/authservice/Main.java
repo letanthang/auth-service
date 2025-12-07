@@ -1,7 +1,6 @@
 package com.example.authservice;
 
 import com.example.authservice.config.AppConfig;
-import com.example.authservice.config.PersistenceConfig;
 import com.example.authservice.domain.exception.HttpException;
 import com.example.authservice.domain.exception.InvalidParameterException;
 import com.example.authservice.domain.repository.TokenRepository;
@@ -14,12 +13,13 @@ import com.example.authservice.infrastructure.repository.MySQLTokenRepository;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import io.javalin.Javalin;
 import io.javalin.http.HttpResponseException;
 import io.javalin.http.HttpStatus;
 import io.javalin.json.JavalinJackson;
 import io.javalin.plugin.bundled.CorsPluginConfig;
-import jakarta.persistence.EntityManagerFactory;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
 import liquibase.Liquibase;
@@ -28,9 +28,13 @@ import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import org.jetbrains.annotations.NotNull;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 
@@ -38,7 +42,7 @@ import static io.javalin.apibuilder.ApiBuilder.*;
 
 public class Main {
     private static final Logger appLog = LoggerFactory.getLogger(Main.class);
-    private static EntityManagerFactory emf;
+    private static DSLContext dbCtx;
 
     public static void main(String[] args) throws Exception {
         AppConfig config = AppConfig.GetInstance();
@@ -46,7 +50,10 @@ public class Main {
 
         NatsJetStreamClient natBroker = new NatsJetStreamClient(config.getNatsOrigin(), config.getNatsUsername(), config.getNatsPassword());
 
-        emf = PersistenceConfig.createEntityManagerFactory();
+        DataSource ds = createHikariDataSource(config);
+        dbCtx = DSL.using(ds, SQLDialect.MYSQL);
+
+
         var authController = getAuthController(natBroker, config);
 
         Javalin app = Javalin.create(conf -> {
@@ -99,17 +106,14 @@ public class Main {
 
         // Add shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (emf != null) {
-                emf.close();
-            }
             app.stop();
         }));
     }
 
     @NotNull
     private static AuthController getAuthController(NatsJetStreamClient natBroker, AppConfig config) {
-        var authUserRepository = new MySQLAuthUserRepository(emf);
-        var tokenRepository = new MySQLTokenRepository(emf);
+        var authUserRepository = new MySQLAuthUserRepository(dbCtx);
+        var tokenRepository = new MySQLTokenRepository(dbCtx);
         removeExpireSession(tokenRepository);
 
         LogoutUseCaseImpl logoutUseCase = new LogoutUseCaseImpl(tokenRepository);
@@ -155,4 +159,23 @@ public class Main {
             throw new RuntimeException("Migration failed", e);
         }
     }
+
+    private static DataSource createHikariDataSource(AppConfig cfg) {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(cfg.getDbUrl()); // replace with your DB
+        config.setUsername(cfg.getDbUser());
+        config.setPassword(cfg.getDbPass());
+
+        // Optional tuning
+        config.setMaximumPoolSize(10);
+        config.setMinimumIdle(2);
+        config.setConnectionTimeout(30000); // 30s
+        config.setIdleTimeout(600000);      // 10 min
+        config.setMaxLifetime(1800000);     // 30 min
+
+        // Create the HikariCP DataSource
+        HikariDataSource ds = new HikariDataSource(config);
+        return ds;
+    }
+
 }

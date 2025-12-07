@@ -2,88 +2,63 @@ package com.example.authservice.infrastructure.repository;
 
 import com.example.authservice.domain.entity.Token;
 import com.example.authservice.domain.repository.TokenRepository;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Query;
-import jakarta.persistence.TypedQuery;
+import com.example.jooq.tables.authdb.tables.Tokens;
+import org.jooq.DSLContext;
 
 import java.time.Instant;
 import java.util.Optional;
 
 public class MySQLTokenRepository implements TokenRepository {
-    private final EntityManagerFactory emf;
+    private final DSLContext dbCtx;
 
-    public MySQLTokenRepository(EntityManagerFactory emf) {
-        this.emf = emf;
+    public MySQLTokenRepository(DSLContext dbCtx) {
+        this.dbCtx = dbCtx;
     }
 
 
     @Override
     public Optional<Token> getTokenById(Integer id) {
-        try (EntityManager em = emf.createEntityManager()) {
-            Token token = em.find(Token.class, id);
-            return Optional.ofNullable(token);
-        }
+        return dbCtx.selectFrom(Token.TABLE_NAME)
+                .where("id = ?", id)
+                .fetchOptionalInto(Token.class);
     }
 
     @Override
     public Optional<Token> getTokenByToken(String token) {
-        try (EntityManager em = emf.createEntityManager()) {
-            TypedQuery<Token> query = em.createQuery(
-                    "SELECT u FROM Token u WHERE u.token = :token", Token.class);
-            query.setParameter("token", token);
-
-            var results = query.getResultList();
-            return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
-        }
+        return dbCtx.selectFrom(Token.TABLE_NAME)
+                .where("token = ?", token)
+                .fetchOptionalInto(Token.class);
     }
 
     @Override
     public Optional<Token> getTokenByEmail(String email) {
-        try (EntityManager em = emf.createEntityManager()) {
-            TypedQuery<Token> query = em.createQuery(
-                    "SELECT u FROM Token u WHERE u.email = :email", Token.class);
-            query.setParameter("email", email);
-
-            var token = query.getSingleResult();
-            return Optional.ofNullable(token);
-        }
+        return dbCtx.selectFrom(Token.TABLE_NAME)
+                .where("email = ?", email)
+                .fetchOptionalInto(Token.class);
     }
 
     @Override
     public void addToken(Token token) {
-        try (EntityManager em = emf.createEntityManager()) {
-            em.getTransaction().begin();
-            em.persist(token);
-            em.getTransaction().commit();
-        }
+        dbCtx.insertInto(Tokens.TOKENS)
+                .set(Tokens.TOKENS.TOKEN, token.getToken())
+                .set(Tokens.TOKENS.EMAIL, token.getEmail())
+                .set(Tokens.TOKENS.EXPIRED_AT, token.getExpired_at())
+                .execute();
     }
 
     @Override
     public boolean deleteToken(Integer id) {
-        try (EntityManager em = emf.createEntityManager()) {
-            em.getTransaction().begin();
-            Token authUser = em.find(Token.class, id);
-            if (authUser != null) {
-                em.remove(authUser);
-                em.getTransaction().commit();
-                return true;
-            }
-            em.getTransaction().rollback();
-            return false;
-        }
+        var rows = dbCtx.deleteFrom(Tokens.TOKENS)
+                .where("id = ?", id)
+                .execute();
+
+        return rows > 0;
     }
 
     @Override
     public int deleteExpiredTokens() {
-        try (EntityManager em = emf.createEntityManager()) {
-            em.getTransaction().begin();
-            Query query = em.createQuery("DELETE FROM Token u WHERE u.expired_at < :now");
-            query.setParameter("now", Instant.now());
-            int rowsDeleted = query.executeUpdate();
-
-            em.getTransaction().commit();
-            return rowsDeleted;
-        }
+        return dbCtx.deleteFrom(Tokens.TOKENS)
+                .where("expired_at > ?", Instant.now())
+                .execute();
     }
 }

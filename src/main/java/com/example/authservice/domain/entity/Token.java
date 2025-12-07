@@ -1,15 +1,10 @@
 package com.example.authservice.domain.entity;
 
-import jakarta.persistence.*;
-
 import java.time.Instant;
 
 
-@Entity
-@Table(name = "tokens")
 public class Token {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public static final String TABLE_NAME = "tokens";
     private Integer id;
     private String token;
     private String email;

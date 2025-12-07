@@ -1,4 +1,8 @@
 export DevID =ocid1.compartment.oc1..aaaaaaaadh37bvvavyij7uwekvq32eu6bgb2awddnmucisib6bdbsm4pcieq
+gen:
+	mvn clean generate-sources
+in:
+	mvn clean install
 run:
 	mvn clean install
 	java -jar target/auth-service-1.0.jar

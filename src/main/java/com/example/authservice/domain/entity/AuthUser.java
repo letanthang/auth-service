@@ -1,26 +1,14 @@
 package com.example.authservice.domain.entity;
 
-import jakarta.persistence.*;
 
-@Entity
-@Table(name = "auth_users")
 public class AuthUser {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-
-    @Column(name = "user_id", nullable = false, unique = true)
     private Integer userID;
-
-    @Column(name = "uuid", nullable = false, unique = true)
     private Long uuid;
-
     private String email;
-
     private String password;
-
-    @Enumerated(EnumType.STRING)
     private Role role;
+    public static final String TABLE_NAME = "auth_users";
 
     public AuthUser() {
     }
