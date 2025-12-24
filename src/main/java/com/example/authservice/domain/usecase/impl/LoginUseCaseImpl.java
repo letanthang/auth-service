@@ -38,13 +38,13 @@ public class LoginUseCaseImpl implements LoginUseCase {
             throw new UnauthorizedUserException();
         }
 
-        String strToken = JwtService.generateToken(email, authUser.getUserID(), authUser.getUUID(), authUser.getRole());
+        String strToken = JwtService.generateToken(email, authUser.getUserId(), authUser.getUUID(), authUser.getRole());
 
         Token token = new Token(email, strToken, JwtService.getExpirationDate());
         this.tokenRepository.addToken(token);
 
         try {
-            AuthUserLoginEvent event = new AuthUserLoginEvent(authUser.getUserID(), email);
+            AuthUserLoginEvent event = new AuthUserLoginEvent(authUser.getUserId(), email);
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(event);
             natBroker.publish(this.userLoginSubject, json);

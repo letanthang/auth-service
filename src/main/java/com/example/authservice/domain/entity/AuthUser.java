@@ -3,7 +3,7 @@ package com.example.authservice.domain.entity;
 
 public class AuthUser {
     private Integer id;
-    private Integer userID;
+    private Integer userId;
     private Long uuid;
     private String email;
     private String password;
@@ -15,7 +15,7 @@ public class AuthUser {
 
     public AuthUser(Integer id, Integer userID, Long uuid, String email, String password, Role role) {
         this.id = id;
-        this.userID = userID;
+        this.userId = userID;
         this.uuid = uuid;
         this.email = email;
         this.password = password;
@@ -30,12 +30,12 @@ public class AuthUser {
         this.id = id;
     }
 
-    public Integer getUserID() {
-        return userID;
+    public Integer getUserId() {
+        return userId;
     }
 
-    public void setUserID(Integer userID) {
-        this.userID = userID;
+    public void setUserId(Integer userId) {
+        this.userId = userId;
     }
 
     public Long getUUID() {

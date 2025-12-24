@@ -53,7 +53,7 @@ public class RegisterUseCaseImpl implements RegisterUseCase {
         this.authUserRepository.addAuthUser(authUser);
 
         try {
-            AuthUserRegisterEvent event = new AuthUserRegisterEvent(authUser.getUserID(), request.getEmail());
+            AuthUserRegisterEvent event = new AuthUserRegisterEvent(authUser.getUserId(), request.getEmail());
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(event);
             natBroker.publish(this.userRegisterSubject, json);

@@ -30,7 +30,6 @@ public class MySQLAuthUserRepository implements AuthUserRepository {
         return dbCtx.selectFrom(AuthUser.TABLE_NAME)
                 .where("email = ?", email)
                 .fetchOptionalInto(AuthUser.class);
-
     }
 
     @Override
@@ -38,7 +37,7 @@ public class MySQLAuthUserRepository implements AuthUserRepository {
         var record = dbCtx.insertInto(AUTH_USERS)
                 .set(AUTH_USERS.EMAIL, authUser.getEmail())
                 .set(AUTH_USERS.ROLE, authUser.getRole().toString())
-                .set(AUTH_USERS.USER_ID, authUser.getUserID())
+                .set(AUTH_USERS.USER_ID, authUser.getUserId())
                 .set(AUTH_USERS.PASSWORD, authUser.getPassword())
                 .set(AUTH_USERS.UUID, authUser.getUUID())
                 .returning(AUTH_USERS.ID)
